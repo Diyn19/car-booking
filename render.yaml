@@ -2,9 +2,9 @@ services:
   - type: web
     name: car-booking
     env: python
-    plan: free
+  pythonVersion: 3.10
     buildCommand: pip install -r requirements.txt
-    startCommand: ./start.sh
+    startCommand: bash start.sh
     envVars:
       - key: FLASK_ENV
         value: production
