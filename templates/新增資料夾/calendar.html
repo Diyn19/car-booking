@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>車輛使用登記管理系統 - 月曆檢視</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    .calendar {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .calendar th, .calendar td {
+      border: 1px solid #ccc;
+      vertical-align: top;
+      padding: 5px;
+    }
+    /* 星期標題置中，且高度固定為 40px */
+    .calendar thead th {
+      text-align: center;
+      height: 40px;
+      vertical-align: middle; /* 垂直置中 */
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    /* 日期格子固定高度，讓內容可以有空間，跟原本高度 120px 差異大 */
+    .calendar td {
+      height: 120px;
+    }
+    .date-number {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .record-item {
+      font-size: 0.85rem;
+      background-color: #e9ecef;
+      margin-bottom: 3px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      cursor: default;
+    }
+    /* 按鈕水平置中 */
+    td > .btn-register {
+      margin-top: 5px;
+      font-size: 0.8rem;
+      padding: 2px 5px;
+      display: block; /* 讓按鈕成為區塊元素 */
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+<div class="container py-3">
+  <h2>2025 年 6 月 車輛使用登記</h2>
+
+  <table class="calendar">
+    <thead>
+      <tr>
+        <th>日</th>
+        <th>一</th>
+        <th>二</th>
+        <th>三</th>
+        <th>四</th>
+        <th>五</th>
+        <th>六</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set week = [] %}
+      {% set first_weekday = days[0].weekday() %} {# Python: Monday=0, Sunday=6 #}
+      {% set weekday_map = [6,0,1,2,3,4,5] %} {# 讓 Sunday=0 對應 #}
+
+      {# 計算6月1日星期幾，調整為日=0,一=1 ...六=6 #}
+      {% set first_day_weekday = (days[0].weekday() + 1) % 7 %}
+
+      {# 填空白格直到第一天 #}
+      {% set day_idx = 0 %}
+      {% set cells = [] %}
+      {% for i in range(first_day_weekday) %}
+        {% set _ = cells.append('') %}
+      {% endfor %}
+
+      {% for day in days %}
+        {% set _ = cells.append(day) %}
+      {% endfor %}
+
+      {% for i in range(0, cells|length, 7) %}
+        <tr>
+          {% for j in range(7) %}
+            {% set cell = cells[i+j] if (i+j) < cells|length else '' %}
+            {% if cell == '' %}
+              <td></td>
+            {% else %}
+              <td>
+                <div class="date-number">{{ cell.day }}</div>
+                {# 顯示該日登記項目簡短清單 #}
+                {% for rec in records.get(cell, []) %}
+                  <div class="record-item" title="用途: {{ rec.purpose }}, 車號: {{ rec.car_number }}, 部門: {{ rec.department }}">
+                    {{ rec.department }} / {{ rec.car_number }}
+                  </div>
+                {% endfor %}
+                <button type="button" class="btn btn-primary btn-sm btn-register" data-bs-toggle="modal" data-bs-target="#modal-{{ cell }}">
+                  登記/編輯
+                </button>
+              </td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# 以下 Modal 與之前版本相同，逐日 Modal #}
+  {% for day in days %}
+  <div class="modal fade" id="modal-{{ day }}" tabindex="-1" aria-labelledby="modalLabel-{{ day }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel-{{ day }}">日期 {{ day }} 登記管理</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- 已登記列表 -->
+          <h6>已登記項目</h6>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>用途</th>
+                <th>車號</th>
+                <th>部門</th>
+                <th>動作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rec in records.get(day, []) %}
+              <tr id="record-{{ rec.id }}">
+                <td>{{ rec.purpose }}</td>
+                <td>{{ rec.car_number }}</td>
+                <td>{{ rec.department }}</td>
+                <td>
+                  <button class="btn btn-warning btn-sm btn-edit"
+                          data-id="{{ rec.id }}"
+                          data-purpose="{{ rec.purpose }}"
+                          data-car="{{ rec.car_number }}"
+                          data-dept="{{ rec.department }}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#edit-modal-{{ day }}">
+                    編輯
+                  </button>
+                  <form action="{{ url_for('delete_record', record_id=rec.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('確定要刪除嗎？');">
+                    <button type="submit" class="btn btn-danger btn-sm">刪除</button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4">尚無登記項目</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <hr>
+
+          <!-- 新增登記表單 -->
+          <h6>新增登記</h6>
+          <form action="{{ url_for('submit') }}" method="POST">
+            <input type="hidden" name="date" value="{{ day }}">
+            <div class="mb-3">
+              <label for="purpose-{{ day }}" class="form-label">用途</label>
+              <input type="text" class="form-control" id="purpose-{{ day }}" name="purpose" required>
+            </div>
+            <div class="mb-3">
+              <label for="car_number-{{ day }}" class="form-label">車號</label>
+              <select class="form-select" id="car_number-{{ day }}" name="car_number" required>
+                <option value="">選擇車號</option>
+                <option value="BKQ-2991">BKQ-2991</option>
+                <option value="BKQ-2990">BKQ-2990</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="department-{{ day }}" class="form-label">部門</label>
+              <select class="form-select" id="department-{{ day }}" name="department" required>
+                <option value="">選擇部門</option>
+                <option value="北市">北市</option>
+                <option value="新北一">新北一</option>
+                <option value="新北二">新北二</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-success">新增</button>
+          </form>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 編輯 Modal -->
+  <div class="modal fade" id="edit-modal-{{ day }}" tabindex="-1" aria-labelledby="editModalLabel-{{ day }}" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="edit-form-{{ day }}" method="POST" action="">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel-{{ day }}">編輯登記</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="record_id" id="edit-record-id-{{ day }}">
+            <input type="hidden" name="date" value="{{ day }}">
+            <div class="mb-3">
+              <label for="edit-purpose-{{ day }}" class="form-label">用途</label>
+              <input type="text" class="form-control" id="edit-purpose-{{ day }}" name="purpose" required>
+            </div>
+            <div class="mb-3">
+              <label for="edit-car_number-{{ day }}" class="form-label">車號</label>
+              <select class="form-select" id="edit-car_number-{{ day }}" name="car_number" required>
+                <option value="">選擇車號</option>
+                <option value="BKQ-2991">BKQ-2991</option>
+                <option value="BKQ-2990">BKQ-2990</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="edit-department-{{ day }}" class="form-label">部門</label>
+              <select class="form-select" id="edit-department-{{ day }}" name="department" required>
+                <option value="">選擇部門</option>
+                <option value="北市">北市</option>
+                <option value="新北一">新北一</option>
+                <option value="新北二">新北二</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">儲存修改</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // 編輯按鈕點擊時，填入資料到編輯表單
+  document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      const purpose = btn.getAttribute('data-purpose');
+      const car = btn.getAttribute('data-car');
+      const dept = btn.getAttribute('data-dept');
+      const day = btn.getAttribute('data-bs-target').replace('#edit-modal-', '');
+
+      const form = document.getElementById('edit-form-' + day);
+      form.action = `/edit/${id}`;
+
+      document.getElementById('edit-record-id-' + day).value = id;
+      document.getElementById('edit-purpose-' + day).value = purpose;
+      document.getElementById('edit-car_number-' + day).value = car;
+      document.getElementById('edit-department-' + day).value = dept;
+    });
+  });
+</script>
+</body>
+</html>

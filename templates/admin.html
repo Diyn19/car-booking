@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>後台管理</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h2>所有登記紀錄</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>用途</th>
+        <th>日期</th>
+        <th>車號</th>
+        <th>部門</th>
+        <th>建立時間</th>
+        <th>更新時間</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in data %}
+        <tr>
+          <td>{{ row.id }}</td>
+          <td>{{ row.purpose }}</td>
+          <td>{{ row.date }}</td>
+          <td>{{ row.car_id }}</td>
+          <td>{{ row.department }}</td>
+          <td>{{ row.created_at }}</td>
+          <td>{{ row.updated_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

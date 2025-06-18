@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>歷史紀錄 - 車輛使用登記管理系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="container py-3">
+  <h2>歷史紀錄</h2>
+  <a href="{{ url_for('calendar_view') }}" class="btn btn-secondary mb-3">返回月曆</a>
+  {% if records %}
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th>用途</th>
+        <th>部門</th>
+        <th>車號</th>
+        <th>使用日期</th>
+		<th>登記日期</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in records %}
+      <tr>
+        <td>{{ rec.purpose }}</td>
+        <td>{{ rec.department }}</td>
+        <td>{{ rec.car_number }}</td>
+        <td>{{ rec.record_date.strftime('%Y-%m-%d') }}</td>
+		<td>
+      {% if rec.register_date %}
+        {{ rec.register_date.strftime('%Y-%m-%d') }}
+      {% else %}
+        -
+      {% endif %}
+    </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>尚無歷史紀錄</p>
+  {% endif %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
